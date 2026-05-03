@@ -639,9 +639,14 @@
   };
 
   // ─── API ───────────────────────────────────────────────────────────────────
+  // ─── FIXED API ────────────────────────────────────────────────────────────
   const api = {
     async get(path) {
-      const res = await fetch(`${WIDGET_CONFIG.apiBase}${path}`);
+      const res = await fetch(`${WIDGET_CONFIG.apiBase}${path}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
@@ -665,7 +670,7 @@
   };
 
   // ─── RENDER ENGINE ─────────────────────────────────────────────────────────
-  let panel, body, progressFill, headerTitle, headerCompany;
+  let panel, bodyEl, progressFill, headerTitle, headerCompany;
   let selectedFile = null;
 
   function setProgress(pct) {
@@ -680,8 +685,8 @@
         wrap.innerHTML = `
           <div class="hl-msg-avatar">${ICONS.bot}</div>
           <div class="hl-msg-bubble">${content}</div>`;
-        body.appendChild(wrap);
-        body.scrollTop = body.scrollHeight;
+        bodyEl.appendChild(wrap);
+        bodyEl.scrollTop = bodyEl.scrollHeight;
         resolve();
       }, delay);
     });
@@ -693,22 +698,28 @@
     wrap.innerHTML = `
       <div class="hl-msg-avatar">${ICONS.bot}</div>
       <div class="hl-msg-bubble"><div class="hl-typing"><span></span><span></span><span></span></div></div>`;
-    body.appendChild(wrap);
-    body.scrollTop = body.scrollHeight;
+    bodyEl.appendChild(wrap);
+    bodyEl.scrollTop = bodyEl.scrollHeight;
     return wrap;
   }
 
   function removeTyping() {
-    const t = body.querySelector('.typing-wrap');
+    const t = bodyEl.querySelector('.typing-wrap');
     if (t) t.remove();
   }
 
   function addUserMsg(text) {
     const wrap = document.createElement('div');
     wrap.className = 'hl-msg user';
-    wrap.innerHTML = `<div class="hl-msg-bubble">${text}</div>`;
-    body.appendChild(wrap);
-    body.scrollTop = body.scrollHeight;
+    wrap.innerHTML = `<div class="hl-msg-bubble">${escapeHtml(text)}</div>`;
+    bodyEl.appendChild(wrap);
+    bodyEl.scrollTop = bodyEl.scrollHeight;
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   function clearFooter() {
@@ -717,28 +728,30 @@
     return footer;
   }
 
-  // ─── STEPS ─────────────────────────────────────────────────────────────────
-
+  // ─── FIXED: Get job by widget token ───────────────────────────────────────
   async function initWidget() {
     try {
-      const data = await api.get(`/api/widget/job/${WIDGET_CONFIG.widgetToken}`);
+      // Fixed endpoint: /api/Jobs/widget/{widgetToken}
+      const data = await api.get(`/api/Jobs/widget/${WIDGET_CONFIG.widgetToken}`);
       state.job = data.data || data;
       state.jobId = state.job.jobId;
       if (headerTitle) headerTitle.textContent = state.job.title || 'Open Position';
       if (headerCompany) headerCompany.textContent = state.job.companyName || '';
-    } catch {
+    } catch (err) {
+      console.error('Failed to load job:', err);
       state.job = { title: 'Open Position', companyName: '' };
+      if (headerTitle) headerTitle.textContent = 'Position Unavailable';
     }
     stepEmail();
   }
 
-  // ── Email step ──
+  // ─── Email step ──
   function stepEmail() {
     state.step = 'email';
     setProgress(15);
-    body.innerHTML = '';
+    bodyEl.innerHTML = '';
 
-    addBotMsg(`👋 Welcome! I'm the HireLoop screening assistant for <strong>${state.job?.title || 'this position'}</strong>.`);
+    addBotMsg(`👋 Welcome! I'm the HireLoop screening assistant for <strong>${escapeHtml(state.job?.title || 'this position')}</strong>.`);
 
     setTimeout(() => {
       addBotMsg("To get started, please enter your email address. I'll send you a quick verification code.");
@@ -774,10 +787,10 @@
 
       const typing = showTyping();
       try {
-        const res = await api.post('/api/otp/send', { jobId: state.jobId, email });
+        const res = await api.post('/api/Otp/send', { jobId: state.jobId, email });
         state.sessionId = res.sessionId || res.data?.sessionId;
         removeTyping();
-        await addBotMsg(`✉️ A 6-digit code has been sent to <strong>${email}</strong>. Please check your inbox.`);
+        await addBotMsg(`✉️ A 6-digit code has been sent to <strong>${escapeHtml(email)}</strong>. Please check your inbox.`);
         stepOtp();
       } catch (err) {
         removeTyping();
@@ -787,7 +800,8 @@
           stepDone(false, true);
         } else {
           await addBotMsg(`Something went wrong sending the code. Please try again.`);
-          btn.disabled = false; input.disabled = false;
+          btn.disabled = false;
+          input.disabled = false;
         }
       }
     };
@@ -796,7 +810,7 @@
     input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
   }
 
-  // ── OTP step ──
+  // ─── OTP step ──
   function stepOtp() {
     state.step = 'otp';
     setProgress(30);
@@ -853,7 +867,7 @@
 
         const typing = showTyping();
         try {
-          await api.post('/api/otp/verify', { sessionId: state.sessionId, otp: code });
+          await api.post('/api/Otp/verify', { sessionId: state.sessionId, otp: code });
           removeTyping();
           await addBotMsg('✅ Email verified! Now please upload your resume so I can review your application.');
           stepResume();
@@ -868,7 +882,7 @@
 
       footer.querySelector('#hl-otp-resend').addEventListener('click', async () => {
         try {
-          const res = await api.post('/api/otp/send', { jobId: state.jobId, email: state.email });
+          const res = await api.post('/api/Otp/send', { jobId: state.jobId, email: state.email });
           state.sessionId = res.sessionId || res.data?.sessionId;
           await addBotMsg('📨 New code sent! Please check your inbox.');
         } catch {
@@ -878,7 +892,7 @@
     }, 300);
   }
 
-  // ── Resume step ──
+  // ─── Resume step ──
   function stepResume() {
     state.step = 'resume';
     setProgress(50);
@@ -917,7 +931,7 @@
       zone.style.display = 'none';
       preview.style.display = 'flex';
       preview.className = 'hl-file-selected';
-      preview.innerHTML = `${ICONS.file} <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${file.name}</span> <button class="hl-link" id="hl-change-file">Change</button>`;
+      preview.innerHTML = `${ICONS.file} <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(file.name)}</span> <button class="hl-link" id="hl-change-file">Change</button>`;
       preview.querySelector('#hl-change-file').addEventListener('click', () => {
         selectedFile = null;
         zone.style.display = '';
@@ -947,7 +961,7 @@
     });
   }
 
-  // ── Screening step ──
+  // ─── Screening step ──
   async function stepScreening(file) {
     state.step = 'screening';
     setProgress(70);
@@ -970,7 +984,6 @@
         </div>
       </div>`;
 
-    // Animate steps
     let stepIdx = 0;
     const interval = setInterval(() => {
       const current = footer.querySelector(`#hl-scan-${stepIdx}`);
@@ -983,11 +996,11 @@
 
     try {
       const formData = new FormData();
-      formData.append('resume', file);
-      formData.append('sessionId', state.sessionId);
-      formData.append('jobId', state.jobId);
+      formData.append('Resume', file);  // Note: Capital 'R' to match OpenAPI spec
+      formData.append('SessionId', state.sessionId);
+      formData.append('JobId', state.jobId);
 
-      const res = await api.postForm('/api/widget/submit-resume', formData);
+      const res = await api.postForm('/api/Widget/submit-resume', formData);
       clearInterval(interval);
 
       if (res.passed) {
@@ -996,15 +1009,9 @@
         setProgress(85);
         clearFooter();
 
-        const matchedSkills = res.matchedSkills || [];
-        const missingSkills = res.missingSkills || [];
-        const tagsHtml = matchedSkills.length
-          ? `<div class="hl-tags">${matchedSkills.map(s => `<span class="hl-tag matched">✓ ${s}</span>`).join('')}</div>`
-          : '';
+        await addBotMsg(`🎉 Great news! Your profile matches the requirements for <strong>${escapeHtml(state.job?.title)}</strong>.`);
 
-        await addBotMsg(`🎉 Great news! Your profile matches the requirements for <strong>${state.job?.title}</strong>.${tagsHtml ? '<br/><br/>' + tagsHtml : ''}`);
-
-        if (state.questions.length > 0) {
+        if (state.questions && state.questions.length > 0) {
           setTimeout(() => stepQuestions(), 500);
         } else {
           setTimeout(() => stepDone(true), 500);
@@ -1012,20 +1019,11 @@
       } else {
         clearInterval(interval);
         const reason = res.reason || 'Your profile does not meet the minimum requirements for this role.';
-        const matchedSkills = res.matchedSkills || [];
-        const missingSkills = res.missingSkills || [];
 
         clearFooter();
         await addBotMsg(`Unfortunately, your application could not proceed at this time.`);
         setTimeout(async () => {
-          let detail = `<strong>Reason:</strong> ${reason}`;
-          if (missingSkills.length) {
-            detail += `<br/><br/><strong>Skills not found:</strong><div class="hl-tags">${missingSkills.map(s => `<span class="hl-tag missing">✗ ${s}</span>`).join('')}</div>`;
-          }
-          if (matchedSkills.length) {
-            detail += `<br/><br/><strong>What matched:</strong><div class="hl-tags">${matchedSkills.map(s => `<span class="hl-tag matched">✓ ${s}</span>`).join('')}</div>`;
-          }
-          await addBotMsg(detail);
+          await addBotMsg(`<strong>Reason:</strong> ${reason}`);
           setTimeout(() => stepDone(false), 400);
         }, 500);
       }
@@ -1043,7 +1041,7 @@
     }
   }
 
-  // ── Follow-up questions step ──
+  // ─── Follow-up questions step ──
   function stepQuestions() {
     state.step = 'questions';
     state.currentQuestion = 0;
@@ -1052,17 +1050,17 @@
   }
 
   async function askNextQuestion() {
-    const q = state.questions[state.currentQuestion];
-    if (!q) {
+    if (!state.questions || !state.questions[state.currentQuestion]) {
       await submitFollowUp();
       return;
     }
 
+    const q = state.questions[state.currentQuestion];
     const progress = 85 + Math.round((state.currentQuestion / state.questions.length) * 10);
     setProgress(progress);
 
     const footer = clearFooter();
-    await addBotMsg(`<strong>Question ${state.currentQuestion + 1} of ${state.questions.length}:</strong><br/>${q.questionText}`);
+    await addBotMsg(`<strong>Question ${state.currentQuestion + 1} of ${state.questions.length}:</strong><br/>${escapeHtml(q.questionText)}`);
 
     footer.innerHTML = `
       <div class="hl-input-row">
@@ -1083,7 +1081,7 @@
       const ans = input.value.trim();
       if (!ans) return;
       addUserMsg(ans);
-      state.answers[q.questionId] = ans;
+      state.answers[q.questionId || q.id] = ans;
       btn.disabled = true;
       input.disabled = true;
       state.currentQuestion++;
@@ -1100,7 +1098,7 @@
     setProgress(95);
     const typing = showTyping();
     try {
-      await api.post('/api/applications/save-followup', {
+      await api.post('/api/Applications/save-followup', {
         applicationId: state.applicationId,
         answers: state.answers,
       });
@@ -1112,7 +1110,7 @@
     }
   }
 
-  // ── Done / Rejected step ──
+  // ─── Done / Rejected step ──
   function stepDone(success, duplicate = false) {
     state.step = success ? 'done' : 'rejected';
     setProgress(100);
@@ -1143,14 +1141,12 @@
     }
   }
 
-  // ─── BUILD DOM ─────────────────────────────────────────────────────────────
+  // ─── BUILD DOM (same as before) ───────────────────────────────────────────
   function buildWidget() {
-    // Inject styles
     const style = document.createElement('style');
     style.textContent = CSS;
     document.head.appendChild(style);
 
-    // Launcher
     const launcher = document.createElement('div');
     launcher.id = 'hl-launcher';
     launcher.innerHTML = `
@@ -1160,7 +1156,6 @@
       </button>
       <div id="hl-tooltip">Apply for this position</div>`;
 
-    // Panel
     panel = document.createElement('div');
     panel.id = 'hl-panel';
     panel.setAttribute('role', 'dialog');
@@ -1182,13 +1177,11 @@
     document.body.appendChild(launcher);
     document.body.appendChild(panel);
 
-    // Cache refs
-    body = panel.querySelector('#hl-body');
+    bodyEl = panel.querySelector('#hl-body');
     progressFill = panel.querySelector('.hl-progress-fill');
     headerTitle = panel.querySelector('#hl-job-title');
     headerCompany = panel.querySelector('#hl-job-company');
 
-    // Toggle
     const bubble = launcher.querySelector('#hl-bubble');
     bubble.addEventListener('click', () => {
       state.isOpen = !state.isOpen;
@@ -1206,7 +1199,6 @@
       }
     });
 
-    // Close on outside click
     document.addEventListener('click', e => {
       if (state.isOpen && !panel.contains(e.target) && !bubble.contains(e.target)) {
         state.isOpen = false;
@@ -1217,7 +1209,6 @@
     });
   }
 
-  // ─── INIT ──────────────────────────────────────────────────────────────────
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', buildWidget);
   } else {

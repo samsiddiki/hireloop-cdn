@@ -10,7 +10,7 @@
 
   // ─── STATE ─────────────────────────────────────────────────────────────────
   const state = {
-    step: 'idle',         // idle | email | otp | resume | screening | questions | done | rejected | error
+    step: 'idle',
     email: '',
     sessionId: null,
     jobId: null,
@@ -52,8 +52,89 @@
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 12px;
+      gap: 8px;
       font-family: 'DM Sans', sans-serif;
+    }
+
+    /* Tooltip wrapper for the button area */
+    .hl-tooltip-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    /* Badge text above the button */
+    .hl-verified-badge {
+      background: linear-gradient(135deg, var(--hl-accent) 0%, var(--hl-accent-light) 100%);
+      color: white;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 20px;
+      letter-spacing: 0.02em;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      animation: hlFadeInUp 0.3s ease-out;
+    }
+
+    .hl-verified-badge::before {
+      content: '✓';
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    @keyframes hlFadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Enhanced tooltip with more info */
+    #hl-enhanced-tooltip {
+      background: var(--hl-ink);
+      color: white;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      padding: 10px 16px;
+      border-radius: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      letter-spacing: 0.01em;
+      line-height: 1.4;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      max-width: 220px;
+      white-space: normal;
+      text-align: center;
+    }
+
+    #hl-enhanced-tooltip::after {
+      content: '';
+      position: absolute;
+      right: 24px;
+      bottom: -5px;
+      width: 10px;
+      height: 10px;
+      background: var(--hl-ink);
+      transform: rotate(45deg);
+      border-radius: 2px;
+    }
+
+    .hl-tooltip-wrapper:hover #hl-enhanced-tooltip {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     #hl-bubble {
@@ -86,46 +167,31 @@
       box-shadow: 0 12px 40px rgba(26,71,42,0.45), 0 4px 12px rgba(0,0,0,0.15);
     }
 
+    /* Notification indicator on button */
+    #hl-bubble::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 10px;
+      height: 10px;
+      background: var(--hl-gold);
+      border-radius: 50%;
+      border: 2px solid var(--hl-accent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    #hl-bubble.has-notification::after {
+      opacity: 1;
+    }
+
     #hl-bubble svg { transition: transform 0.3s cubic-bezier(.34,1.56,.64,1); }
     #hl-bubble.open svg.chat-icon { transform: scale(0) rotate(90deg); }
     #hl-bubble.open svg.close-icon { transform: scale(1) rotate(0deg); }
     #hl-bubble svg.close-icon { position: absolute; transform: scale(0) rotate(-90deg); }
 
-    #hl-tooltip {
-      background: var(--hl-ink);
-      color: white;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 13px;
-      font-weight: 500;
-      padding: 8px 14px;
-      border-radius: 8px;
-      white-space: nowrap;
-      opacity: 0;
-      transform: translateY(6px);
-      transition: opacity 0.2s, transform 0.2s;
-      pointer-events: none;
-      letter-spacing: 0.01em;
-    }
-
-    #hl-tooltip::after {
-      content: '';
-      position: absolute;
-      right: 18px;
-      bottom: -5px;
-      width: 10px;
-      height: 10px;
-      background: var(--hl-ink);
-      transform: rotate(45deg);
-      border-radius: 2px;
-    }
-
-    #hl-launcher:not(.open) #hl-bubble:hover + #hl-tooltip,
-    #hl-tooltip.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* ── Panel ── */
+    /* Panel shadow enhancement */
     #hl-panel {
       position: fixed;
       bottom: 104px;
@@ -153,7 +219,7 @@
       pointer-events: all;
     }
 
-    /* ── Header ── */
+    /* Rest of the CSS remains the same */
     .hl-header {
       background: var(--hl-accent);
       padding: 20px 22px 18px;
@@ -227,7 +293,6 @@
       letter-spacing: 0.02em;
     }
 
-    /* ── Progress bar ── */
     .hl-progress {
       height: 2px;
       background: rgba(255,255,255,0.15);
@@ -241,7 +306,6 @@
       transition: width 0.5s cubic-bezier(.4,0,.2,1);
     }
 
-    /* ── Body ── */
     .hl-body {
       flex: 1;
       overflow-y: auto;
@@ -256,7 +320,6 @@
     .hl-body::-webkit-scrollbar-track { background: transparent; }
     .hl-body::-webkit-scrollbar-thumb { background: var(--hl-paper-3); border-radius: 4px; }
 
-    /* ── Message bubbles ── */
     .hl-msg {
       display: flex;
       gap: 10px;
@@ -300,7 +363,6 @@
       font-size: 13.5px;
     }
 
-    /* ── Typing indicator ── */
     .hl-typing {
       display: flex; gap: 4px; align-items: center;
       padding: 4px 2px;
@@ -321,7 +383,6 @@
       30% { transform: translateY(-5px); opacity: 1; }
     }
 
-    /* ── Footer / Input area ── */
     .hl-footer {
       padding: 14px 16px;
       border-top: 1px solid var(--hl-paper-3);
@@ -368,7 +429,6 @@
     .hl-send-btn:hover { background: var(--hl-accent-light); transform: scale(1.05); }
     .hl-send-btn:disabled { background: var(--hl-paper-3); cursor: not-allowed; transform: none; }
 
-    /* ── OTP inputs ── */
     .hl-otp-row {
       display: flex; gap: 8px; justify-content: center;
       margin: 4px 0;
@@ -395,7 +455,6 @@
 
     .hl-otp-box.filled { border-color: var(--hl-accent); }
 
-    /* ── Upload area ── */
     .hl-upload-zone {
       border: 2px dashed var(--hl-paper-3);
       border-radius: var(--hl-radius-sm);
@@ -442,7 +501,6 @@
       font-weight: 500;
     }
 
-    /* ── Primary button ── */
     .hl-btn {
       width: 100%;
       padding: 12px;
@@ -484,7 +542,6 @@
 
     .hl-btn.secondary:hover { background: var(--hl-accent-pale); box-shadow: none; }
 
-    /* ── Status screens ── */
     .hl-status-screen {
       display: flex; flex-direction: column; align-items: center;
       text-align: center; gap: 12px; padding: 8px 0 4px;
@@ -514,7 +571,6 @@
       max-width: 260px;
     }
 
-    /* ── Screening animation ── */
     .hl-screening {
       display: flex; flex-direction: column; align-items: center;
       gap: 16px; padding: 16px 0;
@@ -573,7 +629,6 @@
     .hl-scan-step.active .hl-step-dot { background: var(--hl-accent); }
     .hl-scan-step.done .hl-step-dot { background: var(--hl-gold); }
 
-    /* ── Skill tags ── */
     .hl-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 
     .hl-tag {
@@ -584,7 +639,6 @@
     .hl-tag.matched { background: var(--hl-accent-pale); color: var(--hl-accent); }
     .hl-tag.missing { background: var(--hl-danger-pale); color: var(--hl-danger); }
 
-    /* ── Link ── */
     .hl-link {
       color: var(--hl-accent); text-decoration: none;
       font-size: 12.5px; font-weight: 500;
@@ -594,7 +648,6 @@
 
     .hl-link:hover { text-decoration: underline; }
 
-    /* ── Divider ── */
     .hl-divider {
       text-align: center; font-size: 11px;
       color: var(--hl-ink-3); letter-spacing: 0.06em;
@@ -610,7 +663,6 @@
     .hl-divider::before { left: 0; }
     .hl-divider::after  { right: 0; }
 
-    /* ── Error notice ── */
     .hl-notice {
       font-size: 12px; padding: 10px 12px;
       border-radius: 8px; line-height: 1.5;
@@ -622,6 +674,7 @@
     @media (max-width: 440px) {
       #hl-panel { right: 12px; left: 12px; width: auto; bottom: 96px; }
       #hl-launcher { right: 16px; }
+      .hl-verified-badge { font-size: 9px; padding: 4px 10px; white-space: normal; text-align: center; max-width: 140px; }
     }
   `;
 
@@ -639,13 +692,10 @@
   };
 
   // ─── API ───────────────────────────────────────────────────────────────────
-  // ─── FIXED API ────────────────────────────────────────────────────────────
   const api = {
     async get(path) {
       const res = await fetch(`${WIDGET_CONFIG.apiBase}${path}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
@@ -728,10 +778,8 @@
     return footer;
   }
 
-  // ─── FIXED: Get job by widget token ───────────────────────────────────────
   async function initWidget() {
     try {
-      // Fixed endpoint: /api/Jobs/widget/{widgetToken}
       const data = await api.get(`/api/Jobs/widget/${WIDGET_CONFIG.widgetToken}`);
       state.job = data.data || data;
       state.jobId = state.job.jobId;
@@ -996,7 +1044,7 @@
 
     try {
       const formData = new FormData();
-      formData.append('Resume', file);  // Note: Capital 'R' to match OpenAPI spec
+      formData.append('Resume', file);
       formData.append('SessionId', state.sessionId);
       formData.append('JobId', state.jobId);
 
@@ -1141,7 +1189,7 @@
     }
   }
 
-  // ─── BUILD DOM (same as before) ───────────────────────────────────────────
+  // ─── BUILD DOM ───────────────────────────────────────────────────────────
   function buildWidget() {
     const style = document.createElement('style');
     style.textContent = CSS;
@@ -1149,13 +1197,36 @@
 
     const launcher = document.createElement('div');
     launcher.id = 'hl-launcher';
-    launcher.innerHTML = `
-      <button id="hl-bubble" aria-label="Open job application">
-        <svg class="chat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <svg class="close-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-      <div id="hl-tooltip">Apply for this position</div>`;
+    
+    // Create wrapper for tooltip and badge
+    const tooltipWrapper = document.createElement('div');
+    tooltipWrapper.className = 'hl-tooltip-wrapper';
+    
+    // Add the "Get HireLoop verified" badge/text
+    const verifiedBadge = document.createElement('div');
+    verifiedBadge.className = 'hl-verified-badge';
+    verifiedBadge.textContent = 'Get HireLoop verified for this job';
+    tooltipWrapper.appendChild(verifiedBadge);
+    
+    // Add the enhanced tooltip
+    const enhancedTooltip = document.createElement('div');
+    enhancedTooltip.id = 'hl-enhanced-tooltip';
+    enhancedTooltip.textContent = '✓ First get verified through HireLoop AI screening, then apply via careers page';
+    tooltipWrapper.appendChild(enhancedTooltip);
+    
+    // Add the bubble button
+    const bubble = document.createElement('button');
+    bubble.id = 'hl-bubble';
+    bubble.setAttribute('aria-label', 'Open job application');
+    bubble.innerHTML = `
+      <svg class="chat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <svg class="close-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    `;
+    tooltipWrapper.appendChild(bubble);
+    
+    launcher.appendChild(tooltipWrapper);
 
+    // Panel
     panel = document.createElement('div');
     panel.id = 'hl-panel';
     panel.setAttribute('role', 'dialog');
@@ -1177,12 +1248,13 @@
     document.body.appendChild(launcher);
     document.body.appendChild(panel);
 
+    // Cache refs
     bodyEl = panel.querySelector('#hl-body');
     progressFill = panel.querySelector('.hl-progress-fill');
     headerTitle = panel.querySelector('#hl-job-title');
     headerCompany = panel.querySelector('#hl-job-company');
 
-    const bubble = launcher.querySelector('#hl-bubble');
+    // Toggle functionality
     bubble.addEventListener('click', () => {
       state.isOpen = !state.isOpen;
       panel.classList.toggle('open', state.isOpen);
@@ -1199,6 +1271,7 @@
       }
     });
 
+    // Close on outside click
     document.addEventListener('click', e => {
       if (state.isOpen && !panel.contains(e.target) && !bubble.contains(e.target)) {
         state.isOpen = false;
@@ -1214,5 +1287,4 @@
   } else {
     buildWidget();
   }
-
 })();

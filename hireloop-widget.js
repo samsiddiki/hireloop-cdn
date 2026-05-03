@@ -3,7 +3,7 @@
 
   // ─── CONFIG ────────────────────────────────────────────────────────────────
   const WIDGET_CONFIG = {
-    apiBase: document.currentScript?.getAttribute('data-api') || 'https://localhost:7252',
+    apiBase: document.currentScript?.getAttribute('data-api') || 'https://localhost:5260',
     widgetToken: document.currentScript?.getAttribute('data-token') || '',
     position: document.currentScript?.getAttribute('data-position') || 'bottom-right',
   };
